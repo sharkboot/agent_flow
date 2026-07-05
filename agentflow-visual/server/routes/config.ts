@@ -1,0 +1,73 @@
+import { Router } from 'express';
+import {
+  listAgents,
+  createAgent,
+  updateAgent,
+  deleteAgent,
+  getConfigDir,
+} from '../cli/storage.js';
+import {
+  listAvailableSkills,
+  getAgentSkills,
+  getCodexSkillsDir,
+  getSkillsDir,
+} from '../cli/skillsManager.js';
+
+export const configRouter = Router();
+
+configRouter.get('/info', (_req, res) => {
+  res.json({
+    version: '0.1.0',
+    configDir: getConfigDir(),
+    supported: ['claude', 'codex', 'agentflow', 'custom'],
+    platform: process.platform,
+  });
+});
+
+configRouter.get('/agents', async (_req, res) => {
+  const agents = await listAgents();
+  res.json(agents);
+});
+
+configRouter.post('/agents', async (req, res) => {
+  const body = req.body;
+  if (!body?.name || !body?.cliCommand) {
+    res.status(400).json({ error: 'name and cliCommand are required' });
+    return;
+  }
+  const agent = await createAgent(body);
+  res.status(201).json(agent);
+});
+
+configRouter.put('/agents/:id', async (req, res) => {
+  const updated = await updateAgent(req.params.id, req.body ?? {});
+  if (!updated) {
+    res.status(404).json({ error: 'Agent not found' });
+    return;
+  }
+  res.json(updated);
+});
+
+configRouter.delete('/agents/:id', async (req, res) => {
+  const ok = await deleteAgent(req.params.id);
+  if (!ok) {
+    res.status(404).json({ error: 'Agent not found' });
+    return;
+  }
+  res.json({ success: true });
+});
+
+// Skills management endpoints
+configRouter.get('/skills', async (_req, res) => {
+  const skills = await listAvailableSkills();
+  res.json({
+    codexSkillsDir: getCodexSkillsDir(),
+    skillsDir: getSkillsDir(),
+    availableSkills: skills,
+  });
+});
+
+configRouter.get('/agents/:id/skills', async (req, res) => {
+  const skills = await getAgentSkills(req.params.id);
+  res.json({ agentId: req.params.id, linkedSkills: skills });
+});

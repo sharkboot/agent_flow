@@ -1,0 +1,43 @@
+{
+  "name": "agentflow-visual",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc -b && vite build",
+    "preview": "vite preview",
+    "server": "tsx server/index.ts",
+    "start": "concurrently -k -n server,web -c green,cyan \"npm:server\" \"npm:dev\"",
+    "test:e2e": "tsx test/e2e.ts",
+    "test:e2e:boot": "tsx test/e2e.ts --boot"
+  },
+  "dependencies": {
+    "@rollup/rollup-win32-x64-msvc": "^4.62.2",
+    "@xyflow/react": "^12.3.5",
+    "cors": "^2.8.5",
+    "express": "^4.21.1",
+    "iconv-lite": "^0.7.3",
+    "lucide-react": "^0.460.0",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1",
+    "uuid": "^11.0.3",
+    "zustand": "^5.0.1"
+  },
+  "devDependencies": {
+    "@types/cors": "^2.8.17",
+    "@types/express": "^5.0.0",
+    "@types/node": "^22.9.0",
+    "@types/react": "^18.3.12",
+    "@types/react-dom": "^18.3.1",
+    "@types/uuid": "^10.0.0",
+    "@vitejs/plugin-react": "^4.3.3",
+    "autoprefixer": "^10.4.20",
+    "concurrently": "^9.1.0",
+    "postcss": "^8.4.49",
+    "tailwindcss": "^3.4.15",
+    "tsx": "^4.19.2",
+    "typescript": "^5.6.3",
+    "vite": "^5.4.11"
+  }
+}

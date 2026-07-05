@@ -1,0 +1,72 @@
+{
+  "name": "未命名工作流",
+  "nodes": [
+    {
+      "id": "input-1",
+      "type": "input",
+      "position": {
+        "x": 100,
+        "y": 50
+      },
+      "data": {
+        "label": "输入",
+        "inputVar": "input"
+      },
+      "measured": {
+        "width": 150,
+        "height": 90
+      }
+    },
+    {
+      "id": "output-1",
+      "type": "output",
+      "position": {
+        "x": 100,
+        "y": 300
+      },
+      "data": {
+        "label": "输出",
+        "outputVar": "output"
+      },
+      "measured": {
+        "width": 150,
+        "height": 90
+      }
+    },
+    {
+      "id": "agent-1783250249307",
+      "type": "agent",
+      "position": {
+        "x": 114,
+        "y": 171
+      },
+      "data": {
+        "label": "cs",
+        "agentId": "agent-e8e1888e",
+        "task": "你好"
+      },
+      "measured": {
+        "width": 160,
+        "height": 68
+      },
+      "selected": true,
+      "dragging": false
+    }
+  ],
+  "edges": [
+    {
+      "source": "input-1",
+      "target": "agent-1783250249307",
+      "id": "xy-edge__input-1-agent-1783250249307"
+    },
+    {
+      "source": "agent-1783250249307",
+      "target": "output-1",
+      "id": "xy-edge__agent-1783250249307-output-1"
+    }
+  ],
+  "variables": {},
+  "id": "wf-cfb8e79b",
+  "createdAt": "2026-07-05T11:17:43.843Z",
+  "updatedAt": "2026-07-05T11:17:43.843Z"
+}
