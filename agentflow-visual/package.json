@@ -7,7 +7,7 @@
     "dev": "vite",
     "build": "tsc -b && vite build",
     "preview": "vite preview",
-    "server": "tsx server/index.ts",
+    "server": "tsx watch server/index.ts",
     "start": "concurrently -k -n server,web -c green,cyan \"npm:server\" \"npm:dev\"",
     "test:e2e": "tsx test/e2e.ts",
     "test:e2e:boot": "tsx test/e2e.ts --boot"

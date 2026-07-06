@@ -1,7 +1,7 @@
 import { EventEmitter } from 'node:events';
 import type { WorkflowNode, WorkflowEdge, StoredWorkflow } from './workflowStorage.js';
 import { getAgent } from './storage.js';
-import { CLIExecutor } from './executor.js';
+import { agentManager } from '../adapters/agentManager.js';
 
 export interface ExecutionContext {
   variables: Record<string, string>;
@@ -28,13 +28,12 @@ export interface WorkflowExecutorEvents {
 }
 
 export class WorkflowExecutor extends EventEmitter {
-  private executor: CLIExecutor;
   private context: ExecutionContext = { variables: {}, outputs: {} };
   private steps: Map<string, ExecutionStep> = new Map();
+  private currentAgentId: string | null = null;
 
   constructor() {
     super();
-    this.executor = new CLIExecutor();
   }
 
   async execute(
@@ -138,44 +137,45 @@ export class WorkflowExecutor extends EventEmitter {
         }
 
         case 'agent': {
-          // Agent node: execute agent with input
-          const agent = await getAgent(node.data.agentId || '');
+          // Agent node: execute via the unified AgentManager so provider
+          // specifics (Claude/Codex/Hermes/custom) live in one place.
+          const agentId = node.data.agentId || '';
+          const agent = await getAgent(agentId);
           if (!agent) {
-            throw new Error(`Agent not found: ${node.data.agentId}`);
+            throw new Error(`Agent not found: ${agentId}`);
           }
 
-          // Get input from connected nodes
+          // Resolve the task string from the connected upstream node or
+          // fall back to the node's stored task template.
           const inputEdge = edges.find((e) => e.target === node.id);
           let task = node.data.task || '';
-          
           if (inputEdge) {
             const inputValue = this.context.outputs[inputEdge.source] || '';
-            // If task is empty, use input as task
             if (!task) {
               task = inputValue;
             } else {
-              // Replace variables in task
               task = this.replaceVariables(task, { input: inputValue });
             }
           }
-
           if (!task) {
             throw new Error(`No task provided for agent: ${node.id}`);
           }
 
-          // Build CLI command
-          const cliArgs = [...(agent.cliArgs || []), task];
-          const result = await this.executor.execute(
-            agent.cliCommand,
-            cliArgs,
-            { cwd: agent.workingDir },
-          );
+          this.currentAgentId = agent.id;
+          const result = await agentManager
+            .fromAgent(agent)
+            .execute(task, {
+              projectPath: agent.workingDir,
+              skills: agent.skills,
+              systemPrompt: agent.config?.systemPrompt,
+              model: agent.config?.model,
+            });
+          this.currentAgentId = null;
 
-          output = result.output;
-          if (result.status === 'failed') {
-            throw new Error(`Agent execution failed: ${result.error}`);
+          if (!result.success) {
+            throw new Error(`Agent execution failed: ${result.error || 'exit non-zero'}`);
           }
-
+          output = result.output;
           this.context.outputs[node.id] = output;
           break;
         }
@@ -286,6 +286,9 @@ export class WorkflowExecutor extends EventEmitter {
   }
 
   cancel(): void {
-    this.executor.cancel();
+    if (this.currentAgentId) {
+      agentManager.abort(this.currentAgentId);
+      this.currentAgentId = null;
+    }
   }
 }

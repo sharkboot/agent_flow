@@ -32,6 +32,7 @@ interface AgentPreset {
 const PRESETS: Record<AgentType, AgentPreset> = {
   claude:    { cliCommand: 'claude', cliArgs: '--print --dangerously-skip-permissions', model: 'claude-sonnet-5' },
   codex:     { cliCommand: 'codex',  cliArgs: 'exec --skip-git-repo-check',              model: 'gpt-5-codex' },
+  hermes:    { cliCommand: 'hermes', cliArgs: '--once',                                  model: 'qwen-3.5-122b' },
   agentflow: { cliCommand: 'agentflow', cliArgs: '',                                     model: '' },
   custom:    { cliCommand: '',       cliArgs: '',                                        model: '' },
 };
@@ -162,6 +163,7 @@ export function AgentForm({ open, initial, onClose, onSubmit }: AgentFormProps) 
           >
             <option value="claude">claude</option>
             <option value="codex">codex</option>
+            <option value="hermes">hermes</option>
             <option value="agentflow">agentflow</option>
             <option value="custom">custom</option>
           </Select>

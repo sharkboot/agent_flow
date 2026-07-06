@@ -3,6 +3,8 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { v4 as uuid } from 'uuid';
 import { syncAgentSkills, cleanupAgentSkills } from './skillsManager.js';
+import { agentManager } from '../adapters/agentManager.js';
+import { deleteAgentHistory } from './agentHistory.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -22,6 +24,8 @@ export interface StoredAgent {
     temperature?: number;
     maxTokens?: number;
     systemPrompt?: string;
+    /** Optional API base URL override. Kept in config to avoid a schema bump. */
+    apiBase?: string;
   };
   skills?: string[];
   mcpServers?: string[];
@@ -120,6 +124,7 @@ export async function updateAgent(
   };
   const saved = await saveAgent(updated);
   await syncAgentSkills(saved.id, saved.skills || []);
+  agentManager.refresh(saved.id);
   return saved;
 }
 
@@ -128,6 +133,8 @@ export async function deleteAgent(id: string): Promise<boolean> {
   try {
     await fs.unlink(file);
     await cleanupAgentSkills(id);
+    await deleteAgentHistory(id);
+    agentManager.refresh(id);
     return true;
   } catch {
     return false;

@@ -1,6 +1,6 @@
 // types/index.ts
 
-export type AgentType = 'claude' | 'codex' | 'agentflow' | 'custom';
+export type AgentType = 'claude' | 'codex' | 'hermes' | 'agentflow' | 'custom';
 
 export interface LocalAgent {
   id: string;

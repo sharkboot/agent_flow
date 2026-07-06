@@ -1,20 +1,29 @@
 import type { ExecutionResult } from '@/types';
 
+export interface ExecuteOpts {
+  agentId: string;
+  sessionId?: string;
+  task: string;
+  onOutput?: (chunk: string) => void;
+  onError?: (chunk: string) => void;
+  /** Fired once the server picks / creates the session (before any output). */
+  onSession?: (sessionId: string) => void;
+}
+
 export class CLIRunner {
   private controller: AbortController | null = null;
 
-  async execute(
-    agentId: string,
-    task: string,
-    onOutput?: (chunk: string) => void,
-    onError?: (chunk: string) => void,
-  ): Promise<ExecutionResult> {
+  async execute(opts: ExecuteOpts): Promise<ExecutionResult> {
     this.controller = new AbortController();
 
     const response = await fetch('/api/cli/execute', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ agentId, task }),
+      body: JSON.stringify({
+        agentId: opts.agentId,
+        sessionId: opts.sessionId,
+        task: opts.task,
+      }),
       signal: this.controller.signal,
     });
 
@@ -43,13 +52,16 @@ export class CLIRunner {
         const payload = trimmed.slice(5).trim();
         try {
           const event = JSON.parse(payload) as {
-            type: 'output' | 'error' | 'complete';
+            type: 'output' | 'error' | 'complete' | 'session';
             data: unknown;
           };
-          if (event.type === 'output' && onOutput) {
-            onOutput(String(event.data));
-          } else if (event.type === 'error' && onError) {
-            onError(String(event.data));
+          if (event.type === 'output' && opts.onOutput) {
+            opts.onOutput(String(event.data));
+          } else if (event.type === 'error' && opts.onError) {
+            opts.onError(String(event.data));
+          } else if (event.type === 'session') {
+            const d = event.data as { sessionId?: string };
+            if (d?.sessionId && opts.onSession) opts.onSession(d.sessionId);
           } else if (event.type === 'complete') {
             finalResult = event.data as ExecutionResult;
           }

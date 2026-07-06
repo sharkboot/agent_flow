@@ -12,6 +12,7 @@ import {
   getCodexSkillsDir,
   getSkillsDir,
 } from '../cli/skillsManager.js';
+import { agentManager } from '../adapters/agentManager.js';
 
 export const configRouter = Router();
 
@@ -19,7 +20,7 @@ configRouter.get('/info', (_req, res) => {
   res.json({
     version: '0.1.0',
     configDir: getConfigDir(),
-    supported: ['claude', 'codex', 'agentflow', 'custom'],
+    supported: ['claude', 'codex', 'hermes', 'agentflow', 'custom'],
     platform: process.platform,
   });
 });
@@ -70,4 +71,16 @@ configRouter.get('/skills', async (_req, res) => {
 configRouter.get('/agents/:id/skills', async (req, res) => {
   const skills = await getAgentSkills(req.params.id);
   res.json({ agentId: req.params.id, linkedSkills: skills });
+});
+
+// GET /api/config/agents/:id/health — best-effort CLI probe
+// (whether the configured `cliCommand` can be located and reports a version).
+configRouter.get('/agents/:id/health', async (req, res) => {
+  try {
+    const adapter = await agentManager.get(req.params.id);
+    const ok = adapter.checkHealth ? await adapter.checkHealth() : true;
+    res.json({ agentId: req.params.id, healthy: ok, type: adapter.type });
+  } catch (err) {
+    res.status(500).json({ error: err instanceof Error ? err.message : String(err) });
+  }
 });

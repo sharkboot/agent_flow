@@ -4,10 +4,14 @@ import { cliRouter } from './routes/cli.js';
 import { configRouter } from './routes/config.js';
 import { workflowRouter } from './routes/workflow.js';
 import { sessionsRouter } from './routes/sessions.js';
-import { ensureConfigDir, getConfigDir } from './cli/storage.js';
+import { ensureConfigDir, getConfigDir, getAgent } from './cli/storage.js';
+import { agentManager } from './adapters/agentManager.js';
 
 async function main() {
   await ensureConfigDir();
+
+  // Wire the AgentManager once — subsequent lookups go through it.
+  agentManager.setResolver(getAgent);
 
   const app = express();
   app.use(cors());
