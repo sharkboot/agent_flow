@@ -10,7 +10,8 @@
     "server": "tsx watch server/index.ts",
     "start": "concurrently -k -n server,web -c green,cyan \"npm:server\" \"npm:dev\"",
     "test:e2e": "tsx test/e2e.ts",
-    "test:e2e:boot": "tsx test/e2e.ts --boot"
+    "test:e2e:boot": "tsx test/e2e.ts --boot",
+    "test:model": "tsx test/model-flag.ts"
   },
   "dependencies": {
     "@rollup/rollup-win32-x64-msvc": "^4.62.2",

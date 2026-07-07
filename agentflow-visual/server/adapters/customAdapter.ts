@@ -25,10 +25,19 @@ export class CustomAdapter extends EventEmitter implements AgentAdapter {
     const cwd = (context?.projectPath as string) || this.agent.workingDir;
     const { args, stdin } = buildCliInvocation(this.agent, task);
 
+    // `custom` doesn't know a universal `--model` flag, but expose the
+    // configured model to the child process via env — a script can read
+    // AGENTFLOW_MODEL and route accordingly. Same for the caller-provided
+    // override in `context.model` (used by workflow nodes).
+    const env: Record<string, string> = {};
+    const model = (context?.model as string) || this.agent.config?.model;
+    if (model) env.AGENTFLOW_MODEL = model;
+
     const t0 = Date.now();
     try {
       const res = await this.executor.execute(this.agent.cliCommand, args, {
         cwd,
+        env,
         stdin,
       });
       return {
@@ -37,7 +46,7 @@ export class CustomAdapter extends EventEmitter implements AgentAdapter {
         error: res.error || undefined,
         duration: res.duration,
         exitCode: res.exitCode,
-        cost: estimateCost(res.output, task.length, this.agent.config?.model || 'unknown'),
+        cost: estimateCost(res.output, task.length, model || 'unknown'),
       };
     } catch (err) {
       return {

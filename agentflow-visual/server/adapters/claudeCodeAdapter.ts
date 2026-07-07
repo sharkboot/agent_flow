@@ -46,9 +46,15 @@ export class ClaudeCodeAdapter extends EventEmitter implements AgentAdapter {
 
   async execute(task: string, context?: Record<string, unknown>): Promise<ExecutionResult> {
     const prompt = this.buildEnhancedPrompt(task, context);
-    const args = [...this.opts.extraArgs, prompt];
+    // The Claude CLI expects `claude [flags] "<prompt>"` — the prompt MUST be
+    // the last positional argument. Previously we pushed the prompt first and
+    // then appended `--model X`, which meant the flag was silently absorbed by
+    // the prompt (or dropped by the CLI) and the user's model choice never
+    // reached the model. Build flags first, prompt last.
     const model = (context?.model as string) || this.opts.model;
+    const args = [...this.opts.extraArgs];
     if (model) args.push('--model', model);
+    args.push(prompt);
 
     const env: Record<string, string> = {};
     if (this.opts.apiKey) env.ANTHROPIC_API_KEY = this.opts.apiKey;

@@ -31,23 +31,26 @@ export function buildCliInvocation(
     return { args: [...extra.filter((a) => a !== '-e')], stdin: task };
   }
 
-  // Provider-specific styles (kept from before).
-  if (agent.type === 'claude') {
-    const args = [...extra, '--print', task];
-    if (agent.config?.model) args.push('--model', agent.config.model);
-    return { args };
-  }
-  if (agent.type === 'codex') {
-    const args = [...extra, '--print', task];
-    if (agent.config?.model) args.push('--model', agent.config.model);
-    return { args };
-  }
+  // Provider-specific styles.
+  // NOTE: `claude` / `codex` / `hermes` types never reach this fn — the
+  // AgentManager routes them to dedicated adapters (which own their own arg
+  // building). The branches used to exist here as a fallback; they were dead
+  // code that mis-suggested this is where you'd tune those providers.
   if (agent.type === 'agentflow') {
-    return { args: [...extra, 'agent', 'execute', agent.id, '--task', task] };
+    const args = [...extra, 'agent', 'execute', agent.id, '--task', task];
+    if (agent.config?.model) args.push('--model', agent.config.model);
+    return { args };
   }
 
   // Custom / fallback: task as one argv value. When shell:false the whole
   // string reaches the program intact — no `;` splitting, no quote stripping.
   // Empty task means: just run cliArgs as-is (useful for `git --version`).
+  //
+  // We deliberately do NOT append `--model` here: `custom` covers arbitrary
+  // CLIs (grep, node -e, a shell script…) and there's no universal flag for
+  // "which model". The user typed the args they want; we respect that.
+  // The chosen `config.model` still reaches `estimateCost()` in the adapter
+  // and can be read by the child via the `AGENTFLOW_MODEL` env var (set in
+  // CustomAdapter) for scripts that want it.
   return { args: task === '' ? [...extra] : [...extra, task] };
 }
