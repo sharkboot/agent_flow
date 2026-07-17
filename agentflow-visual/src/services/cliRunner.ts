@@ -1,4 +1,4 @@
-import type { ExecutionResult } from '@/types';
+import type { AcpEvent, ExecutionResult } from '@/types';
 
 export interface ExecuteOpts {
   agentId: string;
@@ -8,6 +8,8 @@ export interface ExecuteOpts {
   onError?: (chunk: string) => void;
   /** Fired once the server picks / creates the session (before any output). */
   onSession?: (sessionId: string) => void;
+  /** Fired for each structured event (currently only ACP adapters emit these). */
+  onStructured?: (evt: AcpEvent) => void;
 }
 
 export class CLIRunner {
@@ -52,7 +54,7 @@ export class CLIRunner {
         const payload = trimmed.slice(5).trim();
         try {
           const event = JSON.parse(payload) as {
-            type: 'output' | 'error' | 'complete' | 'session';
+            type: 'output' | 'error' | 'complete' | 'session' | 'acp';
             data: unknown;
           };
           if (event.type === 'output' && opts.onOutput) {
@@ -62,6 +64,8 @@ export class CLIRunner {
           } else if (event.type === 'session') {
             const d = event.data as { sessionId?: string };
             if (d?.sessionId && opts.onSession) opts.onSession(d.sessionId);
+          } else if (event.type === 'acp') {
+            if (opts.onStructured) opts.onStructured(event.data as AcpEvent);
           } else if (event.type === 'complete') {
             finalResult = event.data as ExecutionResult;
           }

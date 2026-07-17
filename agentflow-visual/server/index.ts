@@ -4,8 +4,11 @@ import { cliRouter } from './routes/cli.js';
 import { configRouter } from './routes/config.js';
 import { workflowRouter } from './routes/workflow.js';
 import { sessionsRouter } from './routes/sessions.js';
+import { envRouter } from './routes/env.js';
 import { ensureConfigDir, getConfigDir, getAgent } from './cli/storage.js';
 import { agentManager } from './adapters/agentManager.js';
+import { createTerminalServer } from './ws/terminalServer.js';
+import { createShellServer } from './ws/shellServer.js';
 
 async function main() {
   await ensureConfigDir();
@@ -22,12 +25,18 @@ async function main() {
   app.use('/api/config', configRouter);
   app.use('/api/workflows', workflowRouter);
   app.use('/api/sessions', sessionsRouter);
+  app.use('/api/env', envRouter);
 
   const PORT = Number(process.env.PORT || 3001);
-  app.listen(PORT, '127.0.0.1', () => {
+  const server = app.listen(PORT, '127.0.0.1', () => {
     process.stdout.write(`[agentflow-visual] listening on http://localhost:${PORT}\n`);
     process.stdout.write(`[agentflow-visual] config dir: ${getConfigDir()}\n`);
   });
+
+  // Attach WebSocket server for interactive terminal mode
+  createTerminalServer(server, agentManager);
+  // Attach raw PTY shell WebSocket — the "just a real terminal" surface.
+  createShellServer(server);
 }
 
 main().catch((err) => {

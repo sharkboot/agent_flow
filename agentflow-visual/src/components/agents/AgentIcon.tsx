@@ -1,4 +1,4 @@
-import { Bot, Sparkles, Code2, Cpu, Zap, type LucideIcon } from 'lucide-react';
+import { Bot, Sparkles, Code2, Cpu, Zap, Terminal, type LucideIcon } from 'lucide-react';
 import type { AgentType } from '@/types';
 
 const icons: Record<AgentType, LucideIcon> = {
@@ -7,6 +7,7 @@ const icons: Record<AgentType, LucideIcon> = {
   hermes: Zap,
   agentflow: Bot,
   custom: Cpu,
+  acp: Terminal,
 };
 
 const colors: Record<AgentType, string> = {
@@ -15,6 +16,7 @@ const colors: Record<AgentType, string> = {
   hermes: 'text-violet-600 bg-violet-50',
   agentflow: 'text-brand-600 bg-brand-50',
   custom: 'text-slate-600 bg-slate-100',
+  acp: 'text-sky-600 bg-sky-50',
 };
 
 export function AgentIcon({ type, size = 20 }: { type: AgentType; size?: number }) {

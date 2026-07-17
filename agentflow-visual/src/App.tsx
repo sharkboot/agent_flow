@@ -3,6 +3,7 @@ import { Sidebar, type ViewKey } from '@/components/layout/Sidebar';
 import { Header } from '@/components/layout/Header';
 import { AgentsPage } from '@/pages/AgentsPage';
 import { ChatPage } from '@/pages/ChatPage';
+import { TerminalPage } from '@/pages/TerminalPage';
 import { WorkflowPage } from '@/pages/WorkflowPage';
 import { SessionsPage } from '@/pages/SessionsPage';
 import { SettingsPage } from '@/pages/SettingsPage';
@@ -26,6 +27,7 @@ export default function App() {
           {view === 'dashboard' && <DashboardPage onNavigate={setView} />}
           {view === 'agents' && <AgentsPage onOpenChat={() => setView('chat')} />}
           {view === 'chat' && <ChatPage />}
+          {view === 'terminal' && <TerminalPage />}
           {view === 'workflow' && <WorkflowPage />}
           {view === 'sessions' && <SessionsPage />}
           {view === 'settings' && <SettingsPage />}

@@ -5,17 +5,22 @@ interface AgentStore {
   agents: LocalAgent[];
   loading: boolean;
   selectedId: string | null;
+  /** When true, the next ChatPage mount will force terminal view mode */
+  terminalLaunch: boolean;
   fetchAgents: () => Promise<void>;
   createAgent: (agent: Omit<LocalAgent, 'id' | 'createdAt' | 'updatedAt'>) => Promise<LocalAgent>;
   updateAgent: (id: string, patch: Partial<LocalAgent>) => Promise<void>;
   deleteAgent: (id: string) => Promise<void>;
   select: (id: string | null) => void;
+  launchTerminal: () => void;
+  clearTerminalLaunch: () => void;
 }
 
 export const useAgentStore = create<AgentStore>((set, get) => ({
   agents: [],
   loading: false,
   selectedId: null,
+  terminalLaunch: false,
 
   fetchAgents: async () => {
     set({ loading: true });
@@ -61,4 +66,6 @@ export const useAgentStore = create<AgentStore>((set, get) => ({
   },
 
   select: (id) => set({ selectedId: id }),
+  launchTerminal: () => set({ terminalLaunch: true }),
+  clearTerminalLaunch: () => set({ terminalLaunch: false }),
 }));

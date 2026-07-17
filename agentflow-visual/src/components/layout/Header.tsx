@@ -4,6 +4,7 @@ const titles: Record<ViewKey, string> = {
   dashboard: '控制台',
   agents: 'Agent 管理',
   chat: '对话',
+  terminal: '终端',
   workflow: '工作流编排',
   sessions: '本地会话记录',
   settings: '设置',

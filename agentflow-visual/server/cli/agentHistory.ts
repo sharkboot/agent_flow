@@ -30,6 +30,17 @@ export interface HistoryMessage {
     duration?: number;
     error?: string;
     exitCode?: number | null;
+    /**
+     * Structured events from ACP adapters (or any future adapter that
+     * emits `structured`). Older messages predate this field — front-end
+     * code must treat it as optional.
+     */
+    acpEvents?: Array<{
+      kind: string;
+      updateType?: string;
+      content?: unknown;
+      timestamp: string;
+    }>;
   };
 }
 

@@ -1,6 +1,7 @@
 import { Router } from 'express';
 import { getAgent } from '../cli/storage.js';
 import { agentManager } from '../adapters/agentManager.js';
+import type { AdapterStructuredEvent } from '../adapters/unified.js';
 import {
   appendMessages,
   createSession,
@@ -55,15 +56,23 @@ cliRouter.post('/execute', async (req, res) => {
   currentAgentId = agentId;
 
   // Buffer stdout chunks so we can persist the final assistant reply even
-  // when the adapter only returns a summary.
+  // when the adapter only returns a summary. Same for structured events —
+  // we collect them here so they land in `meta.acpEvents` on the assistant
+  // message when the run finishes.
   let streamed = '';
+  const acpEvents: AdapterStructuredEvent[] = [];
   const onData = (chunk: string) => {
     streamed += chunk;
     send('output', chunk);
   };
   const onError = (chunk: string) => send('error', chunk);
+  const onStructured = (evt: AdapterStructuredEvent) => {
+    acpEvents.push(evt);
+    send('acp', evt);
+  };
   adapter.on('data', onData);
   adapter.on('error', onError);
+  adapter.on('structured', onStructured);
 
   // Tell the client which session this run belongs to so it can navigate
   // to it after a "new chat" auto-create.
@@ -97,6 +106,7 @@ cliRouter.post('/execute', async (req, res) => {
             status: result.success ? 'completed' : 'failed',
             duration: result.duration,
             error: result.error,
+            acpEvents: acpEvents.length ? acpEvents : undefined,
           },
         },
       ]);
@@ -132,7 +142,11 @@ cliRouter.post('/execute', async (req, res) => {
           role: 'assistant',
           content: streamed,
           timestamp: new Date().toISOString(),
-          meta: { status: 'failed', error: msg },
+          meta: {
+            status: 'failed',
+            error: msg,
+            acpEvents: acpEvents.length ? acpEvents : undefined,
+          },
         },
       ]);
     } catch {
@@ -150,6 +164,7 @@ cliRouter.post('/execute', async (req, res) => {
   } finally {
     adapter.off('data', onData);
     adapter.off('error', onError);
+    adapter.off('structured', onStructured);
     if (currentAgentId === agentId) currentAgentId = null;
     res.end();
   }

@@ -230,14 +230,10 @@ export function ChatPage() {
       {/* --- Chat column ----------------------------------------------- */}
       <div className="flex-1 overflow-hidden">
         <AgentChat
-          // Reset internal state cleanly when either agent or session changes.
-          key={`${selected.id}::${sessionId ?? 'new'}`}
+          key={`chat::${selected.id}::${sessionId ?? 'new'}`}
           agent={selected}
           sessionId={sessionId}
           onSessionEnsured={(sid) => {
-            // The very first message in a "new" chat lands here. Pin the
-            // session so subsequent messages append to the same file, and
-            // refresh the sidebar so the new entry appears.
             setSessionId(sid);
             loadSessions(selected.id, false);
           }}

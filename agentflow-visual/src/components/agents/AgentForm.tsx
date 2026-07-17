@@ -17,6 +17,14 @@ interface SkillsInfo {
   availableSkills: string[];
 }
 
+interface AcpPresetInfo {
+  id: string;
+  name: string;
+  command: string;
+  args: string[];
+  description?: string;
+}
+
 // -----------------------------------------------------------------------------
 // Presets: each agent type comes with sensible CLI command + args + model.
 // When the user switches type, we swap these in (but keep any custom overrides
@@ -35,6 +43,9 @@ const PRESETS: Record<AgentType, AgentPreset> = {
   hermes:    { cliCommand: 'hermes', cliArgs: '--once',                                  model: 'qwen-3.5-122b' },
   agentflow: { cliCommand: 'agentflow', cliArgs: '',                                     model: '' },
   custom:    { cliCommand: '',       cliArgs: '',                                        model: '' },
+  // ACP preset defaults to Claude Code via npx; user can pick another preset
+  // from the ACP dropdown, which fills in the same fields.
+  acp:       { cliCommand: 'npx',    cliArgs: '--yes @zed-industries/claude-code-acp@latest', model: '' },
 };
 
 /** True when `value` matches any preset's field — i.e. the user hasn't customized it. */
@@ -55,6 +66,7 @@ const defaultForm = {
   temperature: 0.7,
   maxTokens: 4096,
   systemPrompt: '',
+  acpPreset: 'claude-code',
 };
 
 export function AgentForm({ open, initial, onClose, onSubmit }: AgentFormProps) {
@@ -63,6 +75,7 @@ export function AgentForm({ open, initial, onClose, onSubmit }: AgentFormProps) 
   const [availableSkills, setAvailableSkills] = useState<string[]>([]);
   const [selectedSkills, setSelectedSkills] = useState<string[]>([]);
   const [loadingSkills, setLoadingSkills] = useState(false);
+  const [acpPresets, setAcpPresets] = useState<AcpPresetInfo[]>([]);
 
   useEffect(() => {
     if (open) {
@@ -74,6 +87,12 @@ export function AgentForm({ open, initial, onClose, onSubmit }: AgentFormProps) 
         })
         .catch(() => setAvailableSkills([]))
         .finally(() => setLoadingSkills(false));
+
+      // Fetch ACP presets in parallel — cheap, static list.
+      fetch('/api/config/acp-presets')
+        .then((r) => r.json())
+        .then((data: { presets: AcpPresetInfo[] }) => setAcpPresets(data.presets || []))
+        .catch(() => setAcpPresets([]));
     }
   }, [open]);
 
@@ -90,6 +109,7 @@ export function AgentForm({ open, initial, onClose, onSubmit }: AgentFormProps) 
         temperature: initial.config?.temperature ?? 0.7,
         maxTokens: initial.config?.maxTokens ?? 4096,
         systemPrompt: initial.config?.systemPrompt ?? '',
+        acpPreset: initial.config?.acpPreset ?? 'claude-code',
       });
       setSelectedSkills(initial.skills ?? []);
     } else {
@@ -114,6 +134,7 @@ export function AgentForm({ open, initial, onClose, onSubmit }: AgentFormProps) 
           temperature: Number(form.temperature),
           maxTokens: Number(form.maxTokens),
           systemPrompt: form.systemPrompt.trim() || undefined,
+          ...(form.type === 'acp' ? { acpPreset: form.acpPreset } : {}),
         },
         skills: selectedSkills,
       });
@@ -121,6 +142,22 @@ export function AgentForm({ open, initial, onClose, onSubmit }: AgentFormProps) 
     } finally {
       setSaving(false);
     }
+  };
+
+  const applyAcpPreset = (presetId: string) => {
+    const p = acpPresets.find((x) => x.id === presetId);
+    if (!p) {
+      setForm((prev) => ({ ...prev, acpPreset: presetId }));
+      return;
+    }
+    setForm((prev) => ({
+      ...prev,
+      acpPreset: presetId,
+      // Only overwrite command/args if the user hadn't customized them —
+      // i.e. they still match some known preset value.
+      cliCommand: looksLikePreset('cliCommand', prev.cliCommand) ? p.command : prev.cliCommand,
+      cliArgs:    looksLikePreset('cliArgs', prev.cliArgs)       ? p.args.join(' ') : prev.cliArgs,
+    }));
   };
 
   const toggleSkill = (skill: string) => {
@@ -166,8 +203,33 @@ export function AgentForm({ open, initial, onClose, onSubmit }: AgentFormProps) 
             <option value="hermes">hermes</option>
             <option value="agentflow">agentflow</option>
             <option value="custom">custom</option>
+            <option value="acp">acp (Agent Client Protocol)</option>
           </Select>
         </div>
+
+        {form.type === 'acp' && (
+          <div className="col-span-2">
+            <Label>ACP Preset</Label>
+            <Select
+              value={form.acpPreset}
+              onChange={(e) => applyAcpPreset(e.target.value)}
+            >
+              {acpPresets.length === 0 ? (
+                <option value="claude-code">claude-code (加载中…)</option>
+              ) : (
+                acpPresets.map((p) => (
+                  <option key={p.id} value={p.id}>
+                    {p.name}{p.description ? ` — ${p.description}` : ''}
+                  </option>
+                ))
+              )}
+            </Select>
+            <p className="mt-1 text-xs text-slate-500">
+              选择一个内置 preset 会自动填充下方 CLI 命令与参数；也可留空/覆盖为本地已安装的
+              <code className="mx-1 mono">claude-code-acp</code> 等命令。
+            </p>
+          </div>
+        )}
 
         <div className="col-span-2">
           <Label>描述</Label>

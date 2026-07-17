@@ -13,6 +13,12 @@ import {
   getSkillsDir,
 } from '../cli/skillsManager.js';
 import { agentManager } from '../adapters/agentManager.js';
+import { listPresets } from '../adapters/acp/presets.js';
+import {
+  listTerminalPresets,
+  createTerminalPreset,
+  deleteTerminalPreset,
+} from '../cli/terminalPresets.js';
 
 export const configRouter = Router();
 
@@ -20,9 +26,14 @@ configRouter.get('/info', (_req, res) => {
   res.json({
     version: '0.1.0',
     configDir: getConfigDir(),
-    supported: ['claude', 'codex', 'hermes', 'agentflow', 'custom'],
+    supported: ['claude', 'codex', 'hermes', 'agentflow', 'custom', 'acp'],
     platform: process.platform,
   });
+});
+
+/** ACP built-in presets — used by the AgentForm ACP dropdown. */
+configRouter.get('/acp-presets', (_req, res) => {
+  res.json({ presets: listPresets() });
 });
 
 configRouter.get('/agents', async (_req, res) => {
@@ -83,4 +94,39 @@ configRouter.get('/agents/:id/health', async (req, res) => {
   } catch (err) {
     res.status(500).json({ error: err instanceof Error ? err.message : String(err) });
   }
+});
+
+// ---------------------------------------------------------------------------
+// Terminal presets — saved shell launch configs (shell + cwd + command).
+// GET  /api/config/terminal-presets           → list
+// POST /api/config/terminal-presets           → create { name, shell?, cwd?, command? }
+// DEL  /api/config/terminal-presets/:id       → delete
+// ---------------------------------------------------------------------------
+configRouter.get('/terminal-presets', async (_req, res) => {
+  const presets = await listTerminalPresets();
+  res.json({ presets });
+});
+
+configRouter.post('/terminal-presets', async (req, res) => {
+  const body = req.body ?? {};
+  if (!body.name || typeof body.name !== 'string') {
+    res.status(400).json({ error: 'name is required' });
+    return;
+  }
+  const preset = await createTerminalPreset({
+    name: body.name,
+    shell: body.shell,
+    cwd: body.cwd,
+    command: body.command,
+  });
+  res.status(201).json(preset);
+});
+
+configRouter.delete('/terminal-presets/:id', async (req, res) => {
+  const ok = await deleteTerminalPreset(req.params.id);
+  if (!ok) {
+    res.status(404).json({ error: 'preset not found' });
+    return;
+  }
+  res.json({ success: true });
 });

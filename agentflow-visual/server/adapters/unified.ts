@@ -29,9 +29,20 @@ export interface ExecutionResult {
   exitCode?: number | null;
 }
 
+/** Structured event surface — currently only ACP adapters emit these, but
+ *  the shape is deliberately generic so future adapters (e.g. a native
+ *  websocket-based agent) can join without breaking the SSE route. */
+export interface AdapterStructuredEvent {
+  kind: string;
+  updateType?: string;
+  content?: unknown;
+  timestamp: string;
+}
+
 export interface AgentAdapterEvents {
   'data': [string];
   'error': [string];
+  'structured': [AdapterStructuredEvent];
 }
 
 export interface AgentAdapter extends EventEmitter {
@@ -40,6 +51,15 @@ export interface AgentAdapter extends EventEmitter {
   abort(): void;
   /** Best-effort probe. Returns true when the CLI can be located. */
   checkHealth?(): Promise<boolean>;
+  // --- Interactive mode (WebSocket terminal) ---
+  /** Start an interactive session. Resolves when the agent is ready. */
+  startInteractive?(context?: Record<string, unknown>): Promise<void>;
+  /** Write raw input to the agent's stdin (for interactive mode). */
+  writeInput?(data: string): void;
+  /** Notify the agent of terminal resize. */
+  resize?(cols: number, rows: number): void;
+  /** End the interactive session gracefully. */
+  endInteractive?(): Promise<void>;
 }
 
 // Coarse cost estimator — 1 token ≈ 4 chars, $0.003 / 1k tokens each way.

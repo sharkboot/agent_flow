@@ -1,12 +1,13 @@
-import { Home, Users, MessageSquare, Workflow, Settings, FolderTree, type LucideIcon } from 'lucide-react';
+import { Home, Users, MessageSquare, Workflow, Settings, FolderTree, Terminal, type LucideIcon } from 'lucide-react';
 import clsx from '@/utils/clsx';
 
-export type ViewKey = 'dashboard' | 'agents' | 'chat' | 'workflow' | 'sessions' | 'settings';
+export type ViewKey = 'dashboard' | 'agents' | 'chat' | 'terminal' | 'workflow' | 'sessions' | 'settings';
 
 const items: { key: ViewKey; label: string; icon: LucideIcon }[] = [
   { key: 'dashboard', label: '控制台', icon: Home },
   { key: 'agents', label: 'Agents', icon: Users },
   { key: 'chat', label: '对话', icon: MessageSquare },
+  { key: 'terminal', label: '终端', icon: Terminal },
   { key: 'workflow', label: '工作流', icon: Workflow },
   { key: 'sessions', label: '会话记录', icon: FolderTree },
   { key: 'settings', label: '设置', icon: Settings },

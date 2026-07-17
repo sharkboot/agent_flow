@@ -3,6 +3,7 @@ import { ClaudeCodeAdapter } from './claudeCodeAdapter.js';
 import { CodexAdapter } from './codexAdapter.js';
 import { HermesAdapter } from './hermesAdapter.js';
 import { CustomAdapter } from './customAdapter.js';
+import { AcpAdapter } from './acp/adapter.js';
 import type { AgentAdapter, ExecutionResult } from './unified.js';
 
 // -----------------------------------------------------------------------------
@@ -70,6 +71,11 @@ export class AgentManager {
     this.adapters.get(agentId)?.abort();
   }
 
+  /** Get or create an adapter suitable for interactive (long-lived) mode. */
+  async getInteractive(agentId: string): Promise<AgentAdapter> {
+    return this.get(agentId);
+  }
+
   private build(agent: StoredAgent): AgentAdapter {
     const commonCtx = {
       apiKey: readEnvKey(agent.type),
@@ -101,6 +107,21 @@ export class AgentManager {
           cliCommand: agent.cliCommand || 'hermes',
           extraArgs: agent.cliArgs ?? [],
         });
+      case 'acp': {
+        // ACP presets ship default cliCommand/cliArgs; the StoredAgent form
+        // may or may not have overridden them, so treat both as optional.
+        const cfg = agent.config as { acpPreset?: string } | undefined;
+        const acpEnv: Record<string, string> = {};
+        if (commonCtx.apiKey) acpEnv.ANTHROPIC_API_KEY = commonCtx.apiKey;
+        if (process.env.OPENAI_API_KEY) acpEnv.OPENAI_API_KEY = process.env.OPENAI_API_KEY;
+        return new AcpAdapter({
+          presetId: cfg?.acpPreset ?? 'claude-code',
+          cliCommand: agent.cliCommand,
+          extraArgs: agent.cliArgs,
+          workingDirectory: agent.workingDir,
+          env: acpEnv,
+        });
+      }
       // 'agentflow', 'custom' and any unknown type — fall back to the
       // freeform CustomAdapter which honors user-typed argv.
       default:

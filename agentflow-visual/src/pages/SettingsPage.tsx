@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { CliDependencies } from '@/components/CliDependencies';
 
 interface ServerInfo {
   version: string;
@@ -42,6 +43,8 @@ export function SettingsPage() {
             !error && <div className="text-sm text-slate-500">加载中...</div>
           )}
         </section>
+
+        <CliDependencies />
 
         <section className="bg-white rounded-lg border border-slate-200 p-5">
           <h2 className="font-semibold text-slate-800 mb-3">使用说明</h2>

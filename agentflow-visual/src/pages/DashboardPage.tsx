@@ -1,6 +1,7 @@
 import { useAgentStore } from '@/stores/agentStore';
 import { Users, MessageSquare, Workflow, Zap, FolderTree } from 'lucide-react';
 import type { ViewKey } from '@/components/layout/Sidebar';
+import { LocalCLILauncher } from '@/components/LocalCLILauncher';
 
 interface Props {
   onNavigate: (v: ViewKey) => void;
@@ -64,6 +65,10 @@ export function DashboardPage({ onNavigate }: Props) {
             <li>切换到 <b>对话</b> 页面,输入任务开始与 Agent 交互。</li>
             <li>在 <b>工作流</b> 页面拖拽 Agent 节点搭建 Pipeline。</li>
           </ol>
+        </section>
+
+        <section className="mt-6">
+          <LocalCLILauncher onNavigate={onNavigate} />
         </section>
       </div>
     </div>
